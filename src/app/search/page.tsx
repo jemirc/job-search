@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +56,23 @@ const sourceColors: Record<string, string> = {
   'Adzuna': 'bg-emerald-500 text-white',
 };
 
+// SessionStorage cache key
+const CACHE_KEY = 'search_cache';
+
+function loadCache() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveCache(data: { query: string; results: JobResult[]; translatedQuery: string | null; sourceCounts: SourceCounts; activeSource: string }) {
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch { /* ignore */ }
+}
+
 export default function SearchPage() {
   const { locale } = useLocale();
   const [query, setQuery] = useState('');
@@ -85,6 +102,18 @@ export default function SearchPage() {
 
   const resumeRef = useRef<HTMLDivElement>(null);
 
+  // Restore cached results on mount
+  useEffect(() => {
+    const cached = loadCache();
+    if (cached) {
+      setQuery(cached.query || '');
+      setResults(cached.results || []);
+      setTranslatedQuery(cached.translatedQuery || null);
+      setSourceCounts(cached.sourceCounts || {});
+      setActiveSource(cached.activeSource || '전체');
+    }
+  }, []);
+
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!query.trim()) return;
@@ -95,9 +124,13 @@ export default function SearchPage() {
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
-      setResults(data.results || []);
-      setSourceCounts(data.sources || {});
-      setTranslatedQuery(data.translatedQuery || null);
+      const newResults = data.results || [];
+      const newSources = data.sources || {};
+      const newTranslated = data.translatedQuery || null;
+      setResults(newResults);
+      setSourceCounts(newSources);
+      setTranslatedQuery(newTranslated);
+      saveCache({ query, results: newResults, translatedQuery: newTranslated, sourceCounts: newSources, activeSource: '전체' });
     } catch {
       toast.error('검색에 실패했습니다');
     } finally {
@@ -208,10 +241,12 @@ export default function SearchPage() {
         }
       } catch { /* skip */ }
     }
-    setResults([...updated]);
+    const newResults = [...updated];
+    setResults(newResults);
     setBatchAnalyzing(false);
+    saveCache({ query, results: newResults, translatedQuery, sourceCounts, activeSource });
     toast.success('적합도 분석 완료');
-  }, [filteredResults, results]);
+  }, [filteredResults, results, query, translatedQuery, sourceCounts, activeSource]);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600 dark:text-green-400';
