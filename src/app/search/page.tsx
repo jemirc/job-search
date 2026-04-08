@@ -281,49 +281,51 @@ export default function SearchPage() {
           <p className="text-muted-foreground">검색 중...</p>
         </div>
       ) : filteredResults.length > 0 ? (
-        <div className="rounded-lg border overflow-x-auto">
-          <Table className="min-w-[900px]">
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[40px] text-center">#</TableHead>
-                <TableHead className="w-[60px] text-center">적합도</TableHead>
-                <TableHead className="w-[70px]">소스</TableHead>
-                <TableHead>포지션 / 회사</TableHead>
-                <TableHead>지역</TableHead>
-                <TableHead>경력</TableHead>
-                <TableHead>마감</TableHead>
-                <TableHead className="w-[80px] text-center">분석</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredResults.map((job, i) => (
-                <TableRow key={job.id} className="hover:bg-muted/30">
-                  <TableCell className="text-center text-muted-foreground text-sm">{i + 1}</TableCell>
-                  <TableCell className="text-center">
-                    {job.match_score != null ? (
-                      <span className={`font-bold text-sm ${getScoreColor(job.match_score)}`}>{job.match_score}</span>
-                    ) : <span className="text-muted-foreground">-</span>}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={`text-xs ${sourceColors[job.source] || 'bg-gray-500 text-white'}`}>{job.source}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <a href={job.url} target="_blank" rel="noopener noreferrer" className="font-medium text-sm leading-tight hover:text-primary hover:underline">
-                      {job.title}
-                      {job.type && job.type !== '-' && <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0">{job.type}</Badge>}
-                    </a>
-                    <p className="text-xs text-muted-foreground mt-0.5">{job.company}</p>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{job.location || '-'}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{job.experience || '-'}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{job.deadline || '-'}</TableCell>
-                  <TableCell className="text-center">
-                    <Button size="sm" className="text-xs rounded-full bg-indigo-600 hover:bg-indigo-700 text-white px-4" onClick={() => openDetail(job)}>상세</Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="rounded-lg border">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/50 border-b">
+                  <th className="px-2 py-2 text-center font-medium text-muted-foreground w-[36px]">#</th>
+                  <th className="px-2 py-2 text-center font-medium text-muted-foreground w-[50px]">적합도</th>
+                  <th className="px-2 py-2 text-left font-medium text-muted-foreground w-[60px]">소스</th>
+                  <th className="px-3 py-2 text-left font-medium text-muted-foreground min-w-[200px]">포지션 / 회사</th>
+                  <th className="px-2 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">지역</th>
+                  <th className="px-2 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">경력</th>
+                  <th className="px-2 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">마감</th>
+                  <th className="px-2 py-2 text-center font-medium text-muted-foreground sticky right-0 bg-muted/50 w-[70px]">분석</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredResults.map((job, i) => (
+                  <tr key={job.id} className="border-b hover:bg-muted/30 transition-colors">
+                    <td className="px-2 py-2.5 text-center text-muted-foreground">{i + 1}</td>
+                    <td className="px-2 py-2.5 text-center">
+                      {job.match_score != null ? (
+                        <span className={`font-bold ${getScoreColor(job.match_score)}`}>{job.match_score}</span>
+                      ) : <span className="text-muted-foreground">-</span>}
+                    </td>
+                    <td className="px-2 py-2.5">
+                      <Badge className={`text-[10px] ${sourceColors[job.source] || 'bg-gray-500 text-white'}`}>{job.source}</Badge>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <a href={job.url} target="_blank" rel="noopener noreferrer" className="font-medium text-sm leading-tight hover:text-primary hover:underline line-clamp-1">
+                        {job.title}
+                        {job.type && job.type !== '-' && <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0">{job.type}</Badge>}
+                      </a>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{job.company}</p>
+                    </td>
+                    <td className="px-2 py-2.5 text-muted-foreground whitespace-nowrap text-xs max-w-[120px] truncate">{job.location || '-'}</td>
+                    <td className="px-2 py-2.5 text-muted-foreground whitespace-nowrap text-xs">{job.experience || '-'}</td>
+                    <td className="px-2 py-2.5 text-muted-foreground whitespace-nowrap text-xs">{job.deadline || '-'}</td>
+                    <td className="px-2 py-2.5 text-center sticky right-0 bg-background">
+                      <Button size="sm" className="text-xs rounded-full bg-indigo-600 hover:bg-indigo-700 text-white px-3 h-7" onClick={() => openDetail(job)}>상세</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : !loading && query ? (
         <div className="text-center py-20 text-muted-foreground">검색 결과가 없습니다</div>

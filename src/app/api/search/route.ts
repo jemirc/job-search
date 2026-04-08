@@ -40,15 +40,27 @@ function hasKorean(text: string): boolean {
   return /[\uAC00-\uD7AF\u1100-\u11FF]/.test(text);
 }
 
-// Translate Korean to English via Gemini
-async function translateToEnglish(koreanText: string): Promise<string> {
+// Translate between languages for cross-site search
+async function translateQuery(text: string, targetLang: 'en' | 'ko'): Promise<string> {
   try {
-    const result = await generateText(
-      `Translate this Korean job search keyword to the most common English equivalent used in job postings. Return ONLY the English keyword(s), nothing else.\n\nKorean: ${koreanText}`
-    );
-    return result.text.trim();
+    const instruction = targetLang === 'en'
+      ? `Translate this Korean job search keyword to English for searching on international job boards (LinkedIn, eFinancialCareers, etc).
+Rules:
+- Use the most common English job title/keyword equivalent
+- Keep financial/tech jargon as-is (퀀트→quant, 개발자→developer)
+- Return ONLY the English keyword(s), nothing else.`
+      : `Translate this English job search keyword to Korean for searching on Korean job boards (사람인, 원티드, 잡코리아).
+Rules:
+- Use the most common Korean job title/keyword equivalent actually used on Korean job sites
+- Keep technical terms that Koreans commonly search in English as-is (e.g. "quant" stays "퀀트", "developer" can be "개발자")
+- "equity quant" → "주식 퀀트" or "Equity 퀀트"
+- "data engineer" → "데이터 엔지니어"
+- "machine learning" → "머신러닝"
+- Return ONLY the Korean keyword(s), nothing else.`;
+    const result = await generateText(`${instruction}\n\nKeyword: ${text}`);
+    return result.text.trim().replace(/^["']|["']$/g, '');
   } catch {
-    return koreanText;
+    return text;
   }
 }
 
@@ -232,17 +244,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Query required', results: [] }, { status: 400 });
   }
 
-  // Translate Korean keywords to English for international sites
-  let englishQuery = q;
+  // Determine Korean and English queries
   const isKorean = hasKorean(q);
+  let koreanQuery: string;
+  let englishQuery: string;
+
   if (isKorean) {
-    englishQuery = await translateToEnglish(q);
+    koreanQuery = q;
+    englishQuery = await translateQuery(q, 'en');
+  } else {
+    englishQuery = q;
+    koreanQuery = await translateQuery(q, 'ko');
   }
 
-  // Search Korean sites with original query, international sites with English query
+  // Korean sites get Korean query, English sites get English query
   const [saraminResults, wantedResults, adzunaResults, efcResults] = await Promise.allSettled([
-    searchSaramin(q),
-    searchWanted(q),
+    searchSaramin(koreanQuery),
+    searchWanted(koreanQuery),
     searchAdzuna(englishQuery),
     searchEFinancialCareers(englishQuery),
   ]);
@@ -257,7 +275,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     results,
     count: results.length,
-    translatedQuery: isKorean ? englishQuery : null,
+    translatedQuery: isKorean ? `EN: ${englishQuery}` : `KR: ${koreanQuery}`,
     sources: {
       '전체': results.length,
       '사람인': results.filter(r => r.source === '사람인').length,
