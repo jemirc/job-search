@@ -67,7 +67,7 @@ Format the resume cleanly with bullet points for achievements.`;
     return NextResponse.json({ rewritten_resume: rewrittenResume });
   } catch (error) {
     return NextResponse.json(
-      { error: `Gemini API error: ${error instanceof Error ? error.message : 'Unknown'}` },
+      { error: `AI provider error: ${error instanceof Error ? error.message : 'Unknown'}` },
       { status: 500 }
     );
   }

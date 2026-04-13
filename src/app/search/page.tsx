@@ -291,7 +291,7 @@ export default function SearchPage() {
         </p>
       )}
 
-      {/* Source Tabs + Gemini Button */}
+      {/* Source Tabs + AI analysis button */}
       {results.length > 0 && (
         <div className="flex flex-wrap items-center justify-center gap-2">
           {Object.entries(sourceCounts).map(([src, count]) => (
@@ -304,7 +304,7 @@ export default function SearchPage() {
           <Button onClick={batchAnalyze} disabled={batchAnalyzing} variant="outline"
             className="ml-4 rounded-full border-pink-400 text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-950">
             {batchAnalyzing ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" />{batchProgress.current} / {batchProgress.total}</>) :
-              (<><Sparkles className="h-4 w-4 mr-2" />적합도 분석 (Gemini)</>)}
+              (<><Sparkles className="h-4 w-4 mr-2" />적합도 분석 (AI)</>)}
           </Button>
         </div>
       )}
@@ -381,7 +381,7 @@ export default function SearchPage() {
               {analyzing ? (
                 <div className="flex flex-col items-center py-12 gap-3">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-muted-foreground text-sm">Gemini가 직무 요구사항을 상세 분석 중...</p>
+                  <p className="text-muted-foreground text-sm">AI가 직무 요구사항을 상세 분석 중...</p>
                 </div>
               ) : analysisData ? (
                 <div className="space-y-6">

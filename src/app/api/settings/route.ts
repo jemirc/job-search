@@ -1,4 +1,6 @@
 import { getDb } from '@/lib/db';
+import { getProviderName } from '@/lib/ai';
+import { getCodexAuthStatus } from '@/lib/codex';
 import { NextRequest, NextResponse } from 'next/server';
 
 function ensureSettingsTable() {
@@ -31,6 +33,11 @@ export async function GET() {
   if (process.env.OPENAI_API_KEY) settings['OPENAI_API_KEY_env'] = 'true';
   if (process.env.ADZUNA_APP_ID) settings['ADZUNA_APP_ID_env'] = 'true';
   if (process.env.ADZUNA_API_KEY) settings['ADZUNA_API_KEY_env'] = 'true';
+
+  const codexStatus = getCodexAuthStatus();
+  settings['CODEX_CLI_AVAILABLE'] = codexStatus.cliAvailable ? 'true' : 'false';
+  settings['CODEX_AUTH_AVAILABLE'] = codexStatus.oauthAvailable ? 'true' : 'false';
+  settings['CURRENT_AI_PROVIDER'] = getProviderName();
 
   return NextResponse.json(settings);
 }

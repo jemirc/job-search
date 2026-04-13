@@ -87,6 +87,7 @@ export default function SettingsPage() {
   };
 
   const isKeySet = (key: string) => settings[`${key}_set`] === 'true' || settings[`${key}_env`] === 'true';
+  const isCodexReady = settings.CODEX_AUTH_AVAILABLE === 'true';
   const getKeyDisplay = (key: string) => {
     if (settings[key] && settings[`${key}_set`] === 'true') return settings[key];
     if (settings[`${key}_env`] === 'true') return '(환경변수에서 로드됨)';
@@ -125,8 +126,33 @@ export default function SettingsPage() {
                   <SelectItem value="auto">자동 (Gemini 우선)</SelectItem>
                   <SelectItem value="gemini">Gemini (gemini-3-flash-preview)</SelectItem>
                   <SelectItem value="openai">OpenAI (gpt-5.4-mini)</SelectItem>
+                  <SelectItem value="codex">Codex (ChatGPT OAuth)</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                현재 활성 provider: <span className="font-medium">{settings.CURRENT_AI_PROVIDER || 'Not configured'}</span>
+              </p>
+            </div>
+
+            <div className="space-y-2 rounded-lg border bg-muted/30 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <Label>Codex ChatGPT OAuth</Label>
+                {isCodexReady ? (
+                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs">
+                    <CheckCircle className="h-3 w-3 mr-1" />연결됨
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">미연결</Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                API 키 없이 이 컴퓨터의 로컬 <span className="font-mono">codex login</span> 세션을 재사용합니다.
+              </p>
+              {!isCodexReady && (
+                <p className="text-xs text-muted-foreground">
+                  터미널에서 <span className="font-mono">codex login</span> 후 이 페이지를 새로고침하세요.
+                </p>
+              )}
             </div>
 
             {/* Gemini API Key */}

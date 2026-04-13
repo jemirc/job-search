@@ -3,8 +3,9 @@ import OpenAI from 'openai';
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { getCodexAuthStatus, runCodexPrompt } from '@/lib/codex';
 
-type Provider = 'gemini' | 'openai';
+type Provider = 'gemini' | 'openai' | 'codex';
 
 interface AiResponse {
   text: string;
@@ -32,21 +33,30 @@ function getProvider(): { provider: Provider; geminiKey?: string; openaiKey?: st
   // DB keys take priority over env vars
   const geminiKey = getDbSetting('GEMINI_API_KEY') || process.env.GEMINI_API_KEY;
   const openaiKey = getDbSetting('OPENAI_API_KEY') || process.env.OPENAI_API_KEY;
+  const codexStatus = getCodexAuthStatus();
 
   // Check if user explicitly chose a provider
   const preferredProvider = getDbSetting('AI_PROVIDER');
+  if (preferredProvider === 'codex') {
+    if (codexStatus.oauthAvailable) return { provider: 'codex' };
+    throw new Error('Codex ChatGPT 로그인이 필요합니다. 터미널에서 `codex login` 후 다시 시도해주세요.');
+  }
   if (preferredProvider === 'openai' && openaiKey) return { provider: 'openai', openaiKey };
   if (preferredProvider === 'gemini' && geminiKey) return { provider: 'gemini', geminiKey };
 
   if (geminiKey) return { provider: 'gemini', geminiKey };
   if (openaiKey) return { provider: 'openai', openaiKey };
-  throw new Error('GEMINI_API_KEY 또는 OPENAI_API_KEY를 설정 페이지에서 입력해주세요');
+  if (codexStatus.oauthAvailable) return { provider: 'codex' };
+
+  throw new Error('GEMINI_API_KEY, OPENAI_API_KEY 또는 Codex ChatGPT 로그인을 설정해주세요');
 }
 
 export function getProviderName(): string {
   try {
     const { provider } = getProvider();
-    return provider === 'gemini' ? 'Gemini' : 'OpenAI';
+    if (provider === 'gemini') return 'Gemini';
+    if (provider === 'codex') return 'Codex';
+    return 'OpenAI';
   } catch {
     return 'Not configured';
   }
@@ -60,7 +70,7 @@ export async function generateText(prompt: string): Promise<AiResponse> {
     const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
     const result = await model.generateContent(prompt);
     return { text: result.response.text() };
-  } else {
+  } else if (provider === 'openai') {
     const openai = new OpenAI({ apiKey: openaiKey! });
     const result = await openai.chat.completions.create({
       model: 'gpt-5.4-mini',
@@ -68,6 +78,8 @@ export async function generateText(prompt: string): Promise<AiResponse> {
     });
     return { text: result.choices[0]?.message?.content || '' };
   }
+
+  return { text: await runCodexPrompt(prompt) };
 }
 
 export async function generateJson(prompt: string): Promise<AiResponse> {
@@ -81,7 +93,7 @@ export async function generateJson(prompt: string): Promise<AiResponse> {
       generationConfig: { responseMimeType: 'application/json' },
     });
     return { text: result.response.text() };
-  } else {
+  } else if (provider === 'openai') {
     const openai = new OpenAI({ apiKey: openaiKey! });
     const result = await openai.chat.completions.create({
       model: 'gpt-5.4-mini',
@@ -90,4 +102,8 @@ export async function generateJson(prompt: string): Promise<AiResponse> {
     });
     return { text: result.choices[0]?.message?.content || '{}' };
   }
+
+  return {
+    text: await runCodexPrompt(`${prompt}\n\nReturn ONLY valid JSON, no markdown or extra text.`, { expectJson: true }),
+  };
 }

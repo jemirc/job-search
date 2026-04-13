@@ -49,7 +49,7 @@ Be specific with resource recommendations (actual course names, platforms, certi
     return NextResponse.json({ output });
   } catch (error) {
     return NextResponse.json(
-      { error: `Gemini API error: ${error instanceof Error ? error.message : 'Unknown'}` },
+      { error: `AI provider error: ${error instanceof Error ? error.message : 'Unknown'}` },
       { status: 500 }
     );
   }

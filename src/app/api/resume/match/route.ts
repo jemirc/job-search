@@ -59,7 +59,7 @@ Be thorough and specific. Return ONLY valid JSON, no markdown or extra text.`;
     return NextResponse.json(analysis);
   } catch (error) {
     return NextResponse.json(
-      { error: `Gemini API error: ${error instanceof Error ? error.message : 'Unknown'}` },
+      { error: `AI provider error: ${error instanceof Error ? error.message : 'Unknown'}` },
       { status: 500 }
     );
   }
